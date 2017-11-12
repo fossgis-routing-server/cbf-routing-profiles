@@ -42,7 +42,7 @@ for OSRMTYPE in $PROFILES; do
     ln -s $osmdatadir/$osmdatafile $osminbuild
     time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-extract -p $scriptdir/$OSRMTYPE.lua $osminbuild
     echo "time for $OSRMTYPE extract"
-    time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-contract $BUILDDIR/$OSRMTYPE.osrm --core 0.6
+    time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-contract $BUILDDIR/$OSRMTYPE.osrm --core 0.9
     echo "time for $OSRMTYPE contract"
 done
 
