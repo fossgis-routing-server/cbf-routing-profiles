@@ -42,8 +42,10 @@ for OSRMTYPE in $PROFILES; do
     ln -s $osmdatadir/$osmdatafile $osminbuild
     time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-extract -p $scriptdir/$OSRMTYPE.lua $osminbuild
     echo "time for $OSRMTYPE extract"
-    time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-contract $BUILDDIR/$OSRMTYPE.osrm --core 0.9
-    echo "time for $OSRMTYPE contract"
+    time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-partition $BUILDDIR/$OSRMTYPE.osrm
+    echo "time for $OSRMTYPE partition"
+    time LUA_PATH="$scriptdir/lib/?.lua" ./osrm-customize $BUILDDIR/$OSRMTYPE.osrm
+    echo "time for $OSRMTYPE customize"
 done
 
 if [ $COPYDATA = "yes" ]; then
