@@ -360,6 +360,8 @@ function way_function (way, result)
   local foot_forward = way:get_value_by_key("foot:forward")
   local foot_backward = way:get_value_by_key("foot:backward")
   local bicycle = way:get_value_by_key("bicycle")
+  local tracktype = way:get_value_by_key("tracktype")
+  local smoothness = way:get_value_by_key("smoothness")
 
 
   -- speed
@@ -399,6 +401,14 @@ function way_function (way, result)
     -- parking areas
     result.forward_speed = profile.amenity_speeds[amenity]
     result.backward_speed = profile.amenity_speeds[amenity]
+  elseif smoothness and profile.smoothness_speeds[smoothness] then
+    -- smoothness
+    result.forward_speed = profile.smoothness_speeds[smoothness]
+    result.backward_speed = profile.smoothness_speeds[smoothness]
+  elseif tracktype and profile.tracktype_speeds[tracktype] then
+    -- tracks
+    result.forward_speed = profile.tracktype_speeds[tracktype]
+    result.backward_speed = profile.tracktype_speeds[tracktype]
   elseif profile.bicycle_speeds[data.highway] then
     -- regular ways
     result.forward_speed = profile.bicycle_speeds[data.highway]
@@ -533,11 +543,15 @@ function way_function (way, result)
   if properties.weight_name == 'routability' then
       local is_unsafe = profile.safety_penalty < 1 and profile.unsafe_highway_list[data.highway]
       local is_undesireable = data.highway == "service" and profile.service_penalties[service]
+      local surface = way:get_value_by_key("surface") and profile.surface_penalties[surface]
       local penalty = 1.0
       if is_unsafe then
         penalty = math.min(penalty, profile.safety_penalty)
       end
       if is_undesireable then
+        penalty = math.min(penalty, profile.service_penalties[service])
+      end
+      if surface then
         penalty = math.min(penalty, profile.service_penalties[service])
       end
 
@@ -555,9 +569,6 @@ function way_function (way, result)
   end
 
   local handlers = Sequence {
-    -- compute speed taking into account way type, maxspeed tags, etc.
-    'handle_surface_penalties',
-
     -- handle turn lanes and road classification, used for guidance
     'handle_classification',
 

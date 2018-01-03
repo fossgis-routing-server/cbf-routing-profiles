@@ -233,6 +233,58 @@ function Handlers.handle_access(way,result,data,profile)
   end
 end
 
+-- speed for foot profile
+function Handlers.handle_speed_foot(way,result,data,profile)
+  if result.forward_speed ~= -1 then
+    return        -- abort if already set, eg. by a route
+  end
+
+  local key,value,speed = Tags.get_constant_by_key_value(way,profile.speeds)
+  local surface = way:get_value_by_key("surface")
+  local tracktype = way:get_value_by_key("tracktype")
+  local smoothness = way:get_value_by_key("smoothness")
+
+  if speed then
+    -- set speed by way type
+    result.forward_speed = speed
+    result.backward_speed = speed
+  else
+    -- Set the avg speed on ways that are marked accessible
+    if profile.access_tag_whitelist[data.forward_access] then
+      result.forward_speed = profile.default_speed
+    elseif data.forward_access and not profile.access_tag_blacklist[data.forward_access] then
+      result.forward_speed = profile.default_speed -- fallback to the avg speed if access tag is not blacklisted
+    elseif not data.forward_access and data.backward_access then
+       result.forward_mode = mode.inaccessible
+    end
+
+    if profile.access_tag_whitelist[data.backward_access] then
+      result.backward_speed = profile.default_speed
+    elseif data.backward_access and not profile.access_tag_blacklist[data.backward_access] then
+      result.backward_speed = profile.default_speed -- fallback to the avg speed if access tag is not blacklisted
+    elseif not data.backward_access and data.forward_access then
+       result.backward_mode = mode.inaccessible
+    end
+  end
+
+  if surface and profile.surface_penalties[surface] then
+    result.forward_speed = result.forward_speed * profile.surface_penalties[surface]
+    result.backward_speed = result.backward_speed * profile.surface_penalties[surface]
+  end
+  if tracktype and profile.tracktype_speeds[tracktype] then
+    result.forward_speed = profile.tracktype_speeds[tracktype]
+    result.backward_speed = profile.tracktype_speeds[tracktype]
+  end
+  if smoothness and profile.smoothness_speeds[smoothness] then
+    result.forward_speed = profile.smoothness_speeds[smoothness]
+    result.backward_speed = profile.smoothness_speeds[smoothness]
+  end
+
+  if result.forward_speed == -1 and result.backward_speed == -1 and result.duration <= 0 then
+    return false
+  end
+end
+
 -- handle speed (excluding maxspeed)
 function Handlers.handle_speed(way,result,data,profile)
   if result.forward_speed ~= -1 then
@@ -288,29 +340,6 @@ function Handlers.handle_surface_speed(way,result,data,profile)
     result.backward_speed = math.min(profile.smoothness_speeds[smoothness], result.backward_speed)
   end
 end
-
--- reduce speed on bad surfaces
-function Handlers.handle_surface_penalties(way,result,data,profile)
-  local surface = way:get_value_by_key("surface")
-  local tracktype = way:get_value_by_key("tracktype")
-  local smoothness = way:get_value_by_key("smoothness")
-  result.forward_rate = 1
-  result.backward_rate = 1
-
-  if surface and profile.surface_penalties[surface] then
-    result.forward_rate = profile.surface_penalties[surface]
-    result.backward_rate = profile.surface_penalties[surface]
-  end
-  if tracktype and profile.tracktype_speeds[tracktype] then
-    result.forward_speed = profile.tracktype_speeds[tracktype]
-    result.backward_speed = profile.tracktype_speeds[tracktype]
-  end
-  if smoothness and profile.smoothness_speeds[smoothness] then
-    result.forward_speed = profile.smoothness_speeds[smoothness]
-    result.backward_speed = profile.smoothness_speeds[smoothness]
-  end
-end
-
 
 -- scale speeds to get better average driving times
 function Handlers.handle_penalties(way,result,data,profile)
