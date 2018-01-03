@@ -280,9 +280,6 @@ function way_function(way, result)
   if result.backward_rate == -1 and result.backward_speed > 0  then
     result.backward_rate = result.backward_speed / 3.6;
   end
-  print(string.format("weight %g, fspeed %g bspeed %g, frate %g brate %g",
-  	result.weight, result.forward_speed, result.backward_speed,
-	result.forward_rate, result.backward_rate))
 end
 
 function turn_function (turn)
