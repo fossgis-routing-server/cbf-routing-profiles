@@ -563,7 +563,7 @@ function way_function (way, result)
         -- convert from km/h to m/s
         result.backward_rate = result.backward_speed / 3.6 * penalty
       end
-      if result.duration > 0 then
+      if result.duration > 0 and result.forward_mode ~= mode.ferry then
         result.weight = result.duration / penalty
       end
   end
