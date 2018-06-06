@@ -320,6 +320,7 @@ function way_function (way, result)
   end
 
   -- access
+  local access = find_access_tag(way, profile.access_tags_hierarchy)
   data.forward_access, data.backward_access =
     Tags.get_forward_backward_by_set(way,data,profile.access_tags_hierarchy)
 
