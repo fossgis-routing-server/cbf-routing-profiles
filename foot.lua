@@ -2,21 +2,27 @@
 
 api_version = 1
 
-local find_access_tag = require("lib/access").find_access_tag
-local Set = require('lib/set')
-local Sequence = require('lib/sequence')
-local Handlers = require("lib/handlers")
+
+Set = require('lib/set')
+Sequence = require('lib/sequence')
+Handlers = require("lib/way_handlers")
+find_access_tag = require("lib/access").find_access_tag
 local next = next       -- bind to local for speed
 local Tags = require('lib/tags')
-
-properties.max_speed_for_map_matching    = 40/3.6 -- kmph -> m/s
-properties.use_turn_restrictions         = false
-properties.continue_straight_at_waypoint = false
-properties.weight_name                   = 'routability'
 
 local walking_speed = 10
 
 local profile = {
+
+    properties = {
+      weight_name                   = 'routability',
+      max_speed_for_map_matching    = 40/3.6, -- kmph -> m/s
+      call_tagless_node_function    = false,
+      traffic_light_penalty         = 2,
+      u_turn_penalty                = 2,
+      continue_straight_at_waypoint = false,
+      use_turn_restrictions         = false,
+    },
   default_mode            = mode.walking,
   default_speed           = 10,
   designated_speed        = 12,
@@ -68,10 +74,17 @@ local profile = {
     'customers',
   },
 
+  restricted_highway_whitelist = Set { },
+
+  construction_whitelist = Set {},
+
   access_tags_hierarchy = Sequence {
     'foot',
     'access'
   },
+
+  -- tags disallow access to in combination with highway=service
+  service_access_tag_blacklist = Set { },
 
   restrictions = Sequence {
     'foot'
@@ -133,15 +146,18 @@ local profile = {
   bridge_speeds = {
   },
 
-  surface_penalties = { 
-    ["gravel"] = 0.7,
-    ["ground"] = 0.8,
-    ["unpaved"] = 0.8,
-    ["grass"] = 0.5,
-    ["dirt"] = 0.5,
-    ["compacted"] = 0.9,
-    ["grit"] = 0.8,
-    ["sand"] = 0.6
+  surface_speeds = { 
+    ["fine_gravel"] = walking_speed*0.8,
+    ["gravel"] = walking_speed*0.7,
+    ["pebblestone"] = walking_speed*0.7,
+    ["mud"] = walking_speed*0.5,
+    ["ground"] = walking_speed*0.8,
+    ["unpaved"] = walking_speed*0.8,
+    ["grass"] = walking_speed*0.5,
+    ["dirt"] = walking_speed*0.5,
+    ["compacted"] = walking_speed*0.9,
+    ["grit"] = walking_speed*0.8,
+    ["sand"] = walking_speed*0.6
   },
 
   tracktype_speeds = {
@@ -234,45 +250,49 @@ function way_function(way, result)
   local handlers = Sequence {
     -- set the default mode for this profile. if can be changed later
     -- in case it turns we're e.g. on a ferry
-    'handle_default_mode',
+    WayHandlers.default_mode,
 
     -- check various tags that could indicate that the way is not
     -- routable. this includes things like status=impassable,
     -- toll=yes and oneway=reversible
-    'handle_blocked_ways',
+    WayHandlers.blocked_ways,
 
     -- determine access status by checking our hierarchy of
     -- access tags, e.g: motorcar, motor_vehicle, vehicle
-    'handle_access',
+    WayHandlers.access,
 
     -- check whether forward/backward directons are routable
-    'handle_oneway',
+    WayHandlers.oneway,
 
     -- check whether forward/backward directons are routable
-    'handle_destinations',
+    WayHandlers.destinations,
 
     -- check whether we're using a special transport mode
-    'handle_ferries',
-    'handle_movables',
+    WayHandlers.ferries,
+    WayHandlers.movables,
 
     -- compute speed taking into account way type, maxspeed tags, etc.
-    'handle_speed_foot',
+    WayHandlers.speed,
+    WayHandlers.surface,
 
     -- set speed for path
-    'adjust_speed_for_path',
+    WayHandlers.adjust_speed_for_path,
 
     -- handle turn lanes and road classification, used for guidance
-    'handle_classification',
+    WayHandlers.classification,
 
     -- handle various other flags
-    'handle_roundabouts',
-    'handle_startpoint',
+    WayHandlers.roundabouts,
+    WayHandlers.startpoint,
 
     -- set name, ref and pronunciation
-    'handle_names'
+    WayHandlers.names,
+
+    -- set weight properties of the way
+    WayHandlers.weights
   }
 
-  Handlers.run(handlers,way,result,data,profile)
+  WayHandlers.run(profile, way, result, data, handlers)
   
   if result.forward_rate == -1 and result.forward_speed > 0 then
     result.forward_rate = result.forward_speed / 3.6;

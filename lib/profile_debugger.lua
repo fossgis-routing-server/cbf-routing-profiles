@@ -10,9 +10,6 @@ local pprint = require('lib/pprint')
 
 -- globals that are normally set from C++
 
--- profiles code modifies this table
-properties = {}
-
 -- should match values defined in include/extractor/guidance/road_classification.hpp
 road_priority_class = {
   motorway = 0,
@@ -90,7 +87,8 @@ function Debug.report_tag_fetches()
 end
 
 function Debug.load_profile(profile)
-  require(profile)
+  Debug.functions = require(profile)
+  Debug.profile = Debug.functions.setup()
 end
 
 function Debug.reset_tag_fetch_counts()
@@ -115,13 +113,15 @@ function Debug.register_tag_fetch(k)
 
 end
 
-function Debug.way_function(way,result)
+function Debug.process_way(way,result)
   
   -- setup result table
   result.road_classification = {}
   result.forward_speed = -1
   result.backward_speed = -1
   result.duration = 0
+  result.forward_classes = {}
+  result.backward_classes = {}
   
   -- intercept tag function normally provided via C++
   function way:get_value_by_key(k)
@@ -132,8 +132,8 @@ function Debug.way_function(way,result)
   -- reset tag counts
   Debug:reset_tag_fetch_counts()
   
-   -- call the global method defined in the profile file
-  way_function(way,result)
+   -- call the way processsing function
+  Debug.functions.process_way(Debug.profile,way,result)
 end
 
 return Debug
