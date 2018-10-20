@@ -583,7 +583,7 @@ function safety_handler(profile,way,result,data)
       -- convert from km/h to m/s
       result.backward_rate = result.backward_speed / 3.6 * backward_penalty
     end
-    if result.duration > 0 then
+    if result.duration > 0 and result.forward_mode ~= mode.ferry then
       result.weight = result.duration / forward_penalty
     end
 

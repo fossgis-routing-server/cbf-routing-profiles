@@ -424,7 +424,7 @@ function WayHandlers.penalties(profile,way,result,data)
     if result.backward_speed > 0 then
       result.backward_rate = (result.backward_speed * backward_penalty) / 3.6
     end
-    if result.duration > 0 then
+    if result.duration > 0 and result.forward_mode ~= mode.ferry then
       result.weight = result.duration / forward_penalty
     end
   end
