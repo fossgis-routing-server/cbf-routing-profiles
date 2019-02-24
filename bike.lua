@@ -4,19 +4,18 @@ api_version = 4
 
 Set = require('lib/set')
 Sequence = require('lib/sequence')
-Handlers = require("lib/way_handlers")
+Handlers = require("lib/way_handlers_weight")
 find_access_tag = require("lib/access").find_access_tag
 limit = require("lib/maxspeed").limit
 
 function setup()
-  local default_speed = 15
-  local walking_speed = 4
+  local default_speed = {1,   15}
+  local walking_speed = {0.25, 4}
 
   return {
     properties = {
       u_turn_penalty                = 20,
       traffic_light_penalty         = 2,
-      --weight_name                   = 'cyclability',
       weight_name                   = 'duration',
       process_call_tagless_node     = false,
       max_speed_for_map_matching    = 110/3.6, -- kmph -> m/s
@@ -115,63 +114,47 @@ function setup()
       'opposite_track',
     },
 
-    -- reduce the driving speed by 30% for unsafe roads
-    -- only used for cyclability metric
-    unsafe_highway_list = {
-      primary = 0.5,
-      secondary = 0.65,
-      tertiary = 0.8,
-      primary_link = 0.5,
-      secondary_link = 0.65,
-      tertiary_link = 0.8,
-    },
-
     service_penalties = {
       alley             = 0.5,
     },
 
   bicycle_speeds = {
-    cycleway = 18,
-    primary = 15,
-    primary_link = 15,
-    secondary = 16,
-    secondary_link = 16,
-    tertiary = 17,
-    tertiary_link = 17,
-    residential = 18,
-    unclassified = 18,
-    living_street = 18,
-    road = 17,
-    service = 17,
-    track = 12,
-    path = 6,
-    footway = 5,
-    pedestrian = 5,
-    steps = 1
+    cycleway       = {1.3, 16},
+    primary        = {1.0, 16},
+    primary_link   = {1.0, 16},
+    secondary      = {1.1, 16},
+    secondary_link = {1.1, 16},
+    tertiary       = {1.2, 16},
+    tertiary_link  = {1.2, 16},
+    residential    = {1.3, 15},
+    unclassified   = {1.3, 16},
+    living_street  = {1.3, 15},
+    road           = {1.2, 15},
+    service        = {1.2, 15},
+    track          = {0.8, 13},
+    path           = {0.4,  8},
+    footway        = {0.35, 6},
+    pedestrian     = {0.35, 6},
+    steps          = {0.05, 1}
   },
 
     pedestrian_speeds = {
       footway = walking_speed,
       pedestrian = walking_speed,
-      steps = 2
+      steps = {0.05, 2}
     },
 
     railway_speeds = {
-      train = 10,
-      railway = 10,
-      subway = 10,
-      light_rail = 10,
-      monorail = 10,
-      tram = 10
+      train = {0.7, 45},
+      railway = {0.7, 45},
+      subway = {0.7, 30},
+      light_rail = {0.7, 30},
+      monorail = {0.7, 10},
+      tram = {0.7, 20}
     },
 
     platform_speeds = {
       platform = walking_speed
-    },
-
-    amenity_speeds = {
-      parking = 10,
-      parking_entrance = 10
     },
 
     man_made_speeds = {
@@ -179,48 +162,42 @@ function setup()
     },
 
     route_speeds = {
-      ferry = 5
+      ferry = {0.3, nil}
     },
 
     bridge_speeds = {
-      movable = 5
+      movable = {0.3, 5}
     },
 
     surface_speeds = {
       asphalt = default_speed,
-      ["cobblestone:flattened"] = 10,
-      paving_stones = 10,
-      compacted = 10,
-      cobblestone = 6,
-      unpaved = 6,
-      fine_gravel = 6,
-      gravel = 6,
-      pebblestone = 6,
-      ground = 6,
-      dirt = 6,
-      earth = 6,
-      grass = 6,
-      mud = 3,
-      sand = 3,
-      sett = 10
+      ["cobblestone:flattened"] = {0.8, 13},
+      paving_stones = {0.8, 13},
+      compacted = {0.8, 14},
+      cobblestone = {0.4, 6},
+      unpaved = {0.4, 6},
+      fine_gravel = {0.8, 14},
+      gravel = {0.3, 4},
+      pebblestone = {0.4, 6},
+      ground = {0.4, 10},
+      dirt = {0.4, 6},
+      earth = {0.4, 6},
+      grass = {0.3, 6},
+      mud = {0.2, 3},
+      sand = {0.2, 3},
+      sett = {0.7, 10}
     },
 
     classes = Sequence {
         'ferry', 'tunnel'
     },
 
-    -- Which classes should be excludable
-    -- This increases memory usage so its disabled by default.
-    excludable = Sequence {
---        Set {'ferry'}
-    },
-
     tracktype_speeds = {
-    grade1 =  18,
-    grade2 =  16,
-    grade3 =  12,
-    grade4 =   0,
-    grade5 =   0
+    grade1 =  {1.3, 18},
+    grade2 =  {1.1, 16},
+    grade3 =  {0.8, 12},
+    grade4 =  {0, 0},
+    grade5 =  {0, 0}
     },
 
     smoothness_speeds = {
@@ -234,9 +211,9 @@ function setup()
 
     speed_path = {
       sac_scale = nil,
-      foot = { designated = 0.5,
-               yes = 0.9 },
-      bicycle = { yes = 3 },
+      foot = { designated = {0.2, 8},
+               yes = {0.35, 8} },
+      bicycle = { yes = {1.2, 16} },
       ["mtb:scale"] = nil
     }
   }
@@ -349,7 +326,6 @@ function handle_bicycle_tags(profile,way,result,data)
     result.backward_mode = mode.inaccessible
   end
 
-  safety_handler(profile,way,result,data)
 end
 
 
@@ -360,54 +336,66 @@ function speed_handler(profile,way,result,data)
 
   -- speed
   local bridge_speed = profile.bridge_speeds[data.bridge]
-  if (bridge_speed and bridge_speed > 0) then
+  if (bridge_speed and bridge_speed[1] > 0) then
     data.highway = data.bridge
     if data.duration and durationIsValid(data.duration) then
       result.duration = math.max( parseDuration(data.duration), 1 )
     end
-    result.forward_speed = bridge_speed
-    result.backward_speed = bridge_speed
+    result.forward_rate = bridge_speed[2]
+    result.backward_rate = bridge_speed[2]
+    result.forward_speed = bridge_speed[2]
+    result.backward_speed = bridge_speed[2]
     data.way_type_allows_pushing = true
-  elseif profile.route_speeds[data.route] then
+  elseif data.route == "ferry" then
     -- ferries (doesn't cover routes tagged using relations)
     result.forward_mode = mode.ferry
     result.backward_mode = mode.ferry
-    if data.duration and durationIsValid(data.duration) then
+    if data.duration and durationIsValid(data.duration) and (not profile.route_speeds["ferry"] or not profile.route_speeds["ferry"][2]) then
       result.duration = math.max( 1, parseDuration(data.duration) )
-    else
-       result.forward_speed = profile.route_speeds[data.route]
-       result.backward_speed = profile.route_speeds[data.route]
+    end
+    if profile.route_speeds["ferry"] then
+       result.forward_rate = profile.route_speeds["ferry"][1]
+       result.backward_rate = profile.route_speeds["ferry"][1]
+       if profile.route_speeds["ferry"][2] then
+         result.forward_speed = profile.route_speeds["ferry"][2]
+         result.backward_speed = profile.route_speeds["ferry"][2]
+       end
     end
   -- railway platforms (old tagging scheme)
   elseif data.railway and profile.platform_speeds[data.railway] then
-    result.forward_speed = profile.platform_speeds[data.railway]
-    result.backward_speed = profile.platform_speeds[data.railway]
+    result.forward_rate = profile.platform_speeds[data.railway][1]
+    result.backward_rate = profile.platform_speeds[data.railway][1]
+    result.forward_speed = profile.platform_speeds[data.railway][2]
+    result.backward_speed = profile.platform_speeds[data.railway][2]
     data.way_type_allows_pushing = true
   -- public_transport platforms (new tagging platform)
   elseif data.public_transport and profile.platform_speeds[data.public_transport] then
-    result.forward_speed = profile.platform_speeds[data.public_transport]
-    result.backward_speed = profile.platform_speeds[data.public_transport]
+    result.forward_rate = profile.platform_speeds[data.public_transport][1]
+    result.backward_rate = profile.platform_speeds[data.public_transport][1]
+    result.forward_speed = profile.platform_speeds[data.public_transport][2]
+    result.backward_speed = profile.platform_speeds[data.public_transport][2]
     data.way_type_allows_pushing = true
   -- railways
   elseif profile.use_public_transport and data.railway and profile.railway_speeds[data.railway] and profile.access_tag_whitelist[data.access] then
     result.forward_mode = mode.train
     result.backward_mode = mode.train
-    result.forward_speed = profile.railway_speeds[data.railway]
-    result.backward_speed = profile.railway_speeds[data.railway]
-  elseif data.amenity and profile.amenity_speeds[data.amenity] then
-    -- parking areas
-    result.forward_speed = profile.amenity_speeds[data.amenity]
-    result.backward_speed = profile.amenity_speeds[data.amenity]
-    data.way_type_allows_pushing = true
+    result.forward_rate = profile.railway_speeds[data.railway][1]
+    result.backward_rate = profile.railway_speeds[data.railway][1]
+    result.forward_speed = profile.railway_speeds[data.railway][2]
+    result.backward_speed = profile.railway_speeds[data.railway][2]
   elseif profile.bicycle_speeds[data.highway] then
     -- regular ways
-    result.forward_speed = profile.bicycle_speeds[data.highway]
-    result.backward_speed = profile.bicycle_speeds[data.highway]
+    result.forward_rate = profile.bicycle_speeds[data.highway][1]
+    result.backward_rate = profile.bicycle_speeds[data.highway][1]
+    result.forward_speed = profile.bicycle_speeds[data.highway][2]
+    result.backward_speed = profile.bicycle_speeds[data.highway][2]
     data.way_type_allows_pushing = true
   elseif data.access and profile.access_tag_whitelist[data.access]  then
     -- unknown way, but valid access tag
-    result.forward_speed = profile.default_speed
-    result.backward_speed = profile.default_speed
+    result.forward_rate = profile.default_speed[1]
+    result.backward_rate = profile.default_speed[1]
+    result.forward_speed = profile.default_speed[2]
+    result.backward_speed = profile.default_speed[2]
     data.way_type_allows_pushing = true
   end
 end
@@ -481,12 +469,14 @@ function cycleway_handler(profile,way,result,data)
 
   if data.has_cycleway_backward then
     result.backward_mode = mode.cycling
-    result.backward_speed = profile.bicycle_speeds["cycleway"]
+    result.backward_rate = profile.bicycle_speeds["cycleway"][1]
+    result.backward_speed = profile.bicycle_speeds["cycleway"][2]
   end
 
   if data.has_cycleway_forward then
     result.forward_mode = mode.cycling
-    result.forward_speed = profile.bicycle_speeds["cycleway"]
+    result.forward_rate = profile.bicycle_speeds["cycleway"][1]
+    result.forward_speed = profile.bicycle_speeds["cycleway"][2]
   end
 end
 
@@ -524,11 +514,13 @@ function bike_push_handler(profile,way,result,data)
 
       if push_forward_speed and (result.forward_mode == mode.inaccessible or result.forward_speed == -1) then
         result.forward_mode = mode.pushing_bike
-        result.forward_speed = push_forward_speed
+        result.forward_rate = push_forward_speed[1]
+        result.forward_speed = push_forward_speed[2]
       end
       if push_backward_speed and (result.backward_mode == mode.inaccessible or result.backward_speed == -1)then
         result.backward_mode = mode.pushing_bike
-        result.backward_speed = push_backward_speed
+        result.backward_rate = push_backward_speed[1]
+        result.backward_speed = push_backward_speed[2]
       end
 
     end
@@ -539,72 +531,12 @@ function bike_push_handler(profile,way,result,data)
   if data.bicycle == "dismount" then
     result.forward_mode = mode.pushing_bike
     result.backward_mode = mode.pushing_bike
-    result.forward_speed = profile.walking_speed
-    result.backward_speed = profile.walking_speed
+    result.forward_rate = profile.walking_speed[1]
+    result.backward_rate = profile.walking_speed[1]
+    result.forward_speed = profile.walking_speed[2]
+    result.backward_speed = profile.walking_speed[2]
   end
 end
-
-function safety_handler(profile,way,result,data)
-  -- convert duration into cyclability
-  if profile.properties.weight_name == 'cyclability' then
-    local safety_penalty = profile.unsafe_highway_list[data.highway] or 1.
-    local is_unsafe = safety_penalty < 1
-
-    -- primaries that are one ways are probably huge primaries where the lanes need to be separated
-    if is_unsafe and data.highway == 'primary' and not data.is_twoway then
-      safety_penalty = safety_penalty * 0.5
-    end
-    if is_unsafe and data.highway == 'secondary' and not data.is_twoway then
-      safety_penalty = safety_penalty * 0.6
-    end
-
-    local forward_is_unsafe = is_unsafe and not data.has_cycleway_forward
-    local backward_is_unsafe = is_unsafe and not data.has_cycleway_backward
-    local is_undesireable = data.highway == "service" and profile.service_penalties[data.service]
-    local forward_penalty = 1.
-    local backward_penalty = 1.
-    if forward_is_unsafe then
-      forward_penalty = math.min(forward_penalty, safety_penalty)
-    end
-    if backward_is_unsafe then
-       backward_penalty = math.min(backward_penalty, safety_penalty)
-    end
-
-    if is_undesireable then
-       forward_penalty = math.min(forward_penalty, profile.service_penalties[data.service])
-       backward_penalty = math.min(backward_penalty, profile.service_penalties[data.service])
-    end
-
-    if result.forward_speed > 0 then
-      -- convert from km/h to m/s
-      result.forward_rate = result.forward_speed / 3.6 * forward_penalty
-    end
-    if result.backward_speed > 0 then
-      -- convert from km/h to m/s
-      result.backward_rate = result.backward_speed / 3.6 * backward_penalty
-    end
-    if result.duration > 0 and result.forward_mode ~= mode.ferry then
-      result.weight = result.duration / forward_penalty
-    end
-
-    if data.highway == "bicycle" then
-      safety_bonus = safety_bonus + 0.2
-      if result.forward_speed > 0 then
-        -- convert from km/h to m/s
-        result.forward_rate = result.forward_speed / 3.6 * safety_bonus
-      end
-      if result.backward_speed > 0 then
-        -- convert from km/h to m/s
-        result.backward_rate = result.backward_speed / 3.6 * safety_bonus
-      end
-      if result.duration > 0 then
-        result.weight = result.duration / safety_bonus
-      end
-    end
-  end
-end
-
-
 
 function process_way(profile, way, result)
   -- the initial filtering of ways based on presence of tags

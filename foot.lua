@@ -1,21 +1,21 @@
 -- Foot profile
 
-api_version = 1
+api_version = 4
 
 
 Set = require('lib/set')
 Sequence = require('lib/sequence')
-Handlers = require("lib/way_handlers")
+Handlers = require("lib/way_handlers_weight")
 find_access_tag = require("lib/access").find_access_tag
-local next = next       -- bind to local for speed
 local Tags = require('lib/tags')
 
-local walking_speed = 10
+function setup()
 
-local profile = {
+  return {
 
     properties = {
       weight_name                   = 'routability',
+      weight_precision              = 2,
       max_speed_for_map_matching    = 40/3.6, -- kmph -> m/s
       call_tagless_node_function    = false,
       traffic_light_penalty         = 2,
@@ -23,169 +23,171 @@ local profile = {
       continue_straight_at_waypoint = false,
       use_turn_restrictions         = false,
     },
-  default_mode            = mode.walking,
-  default_speed           = 10,
-  designated_speed        = 12,
-  oneway_handling         = 'specific',     -- respect 'oneway:foot' but not 'oneway'
-  traffic_light_penalty   = 2,
-  u_turn_penalty          = 2,
 
-  barrier_whitelist = Set {
-    'kerb',
-    'block',
-    'bollard',
-    'border_control',
-    'cattle_grid',
-    'entrance',
-    'sally_port',
-    'toll_booth',
-    'cycle_barrier',
-    'gate',
-    'no',
-    'stile',
-    'bock',
-    'kissing_gate',
-    'turnstile',
-    'hampshire_gate'
-  },
+    default_mode            = mode.walking,
+    default_speed           = 4.5,
+    default_weight          = 1,
+    designated_weight       = 1.2,
+    oneway_handling         = 'specific',     -- respect 'oneway:foot' but not 'oneway'
+    traffic_light_penalty   = 2,
+    u_turn_penalty          = 2,
 
-  access_tag_whitelist = Set {
-    'yes',
-    'foot',
-    'permissive',
-    'designated'
-  },
-
-  access_tag_blacklist = Set {
-    'no',
-    'agricultural',
-    'forestry',
-    'emergency',
-    'customers',
-    'private',
-    'delivery',
-    'destination'
-  },
-
-  restricted_access_tag_list = Set {
-    'private',
-    'delivery',
-    'destination',
-    'customers',
-  },
-
-  restricted_highway_whitelist = Set { },
-
-  construction_whitelist = Set {},
-
-  access_tags_hierarchy = Sequence {
-    'foot',
-    'access'
-  },
-
-  -- tags disallow access to in combination with highway=service
-  service_access_tag_blacklist = Set { },
-
-  restrictions = Sequence {
-    'foot'
-  },
-
-  -- list of suffixes to suppress in name change instructions
-  suffix_list = Set {
-    'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'North', 'South', 'West', 'East'
-  },
-
-  avoid = Set {
-    'impassable'
-  },
-
-  speeds = Sequence {
-    highway = {
-      footway         = 12,
-      cycleway        = 10,
-      primary         = 7,
-      primary_link    = 7,
-      secondary       = 8,
-      secondary_link  = 8,
-      tertiary        = 9,
-      tertiary_link   = 9,
-      unclassified    = 10,
-      residential     = 10,
-      road            = 10,
-      living_street   = 11,
-      service         = 10,
-      path            = 12,
-      track           = 11,
-      steps           = 11,
-      pedestrian      = 12,
-      pier            = 10,
+    barrier_whitelist = Set {
+      'kerb',
+      'block',
+      'bollard',
+      'border_control',
+      'cattle_grid',
+      'entrance',
+      'sally_port',
+      'toll_booth',
+      'cycle_barrier',
+      'gate',
+      'no',
+      'stile',
+      'bock',
+      'kissing_gate',
+      'turnstile',
+      'hampshire_gate'
     },
 
-    railway = {
-      platform        = 10
+    access_tag_whitelist = Set {
+      'yes',
+      'foot',
+      'permissive',
+      'designated'
     },
 
-    amenity = {
-      parking         = 10,
-      parking_entrance= 10
+    access_tag_blacklist = Set {
+      'no',
+      'agricultural',
+      'forestry',
+      'emergency',
+      'customers',
+      'private',
+      'delivery',
+      'destination'
     },
 
-    man_made = {
-      pier            = 10
+    restricted_access_tag_list = Set {
+      'private',
+      'delivery',
+      'destination',
+      'customers',
     },
 
-    leisure = {
-      track           = 10
+    restricted_highway_whitelist = Set { },
+
+    construction_whitelist = Set {},
+
+    access_tags_hierarchy = Sequence {
+      'foot',
+      'access'
+    },
+
+    -- tags disallow access to in combination with highway=service
+    service_access_tag_blacklist = Set { },
+
+    restrictions = Sequence {
+      'foot'
+    },
+
+    -- list of suffixes to suppress in name change instructions
+    suffix_list = Set {
+      'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'North', 'South', 'West', 'East'
+    },
+
+    avoid = Set {
+      'impassable'
+    },
+
+    speeds = Sequence {
+      highway = {
+        footway         = {1.2, 4.5},
+        cycleway        = {1.0, 4.5},
+        primary         = {0.7, 4.5},
+        primary_link    = {0.7, 4.5},
+        secondary       = {0.8, 4.5},
+        secondary_link  = {0.8, 4.5},
+        tertiary        = {0.9, 4.5},
+        tertiary_link   = {0.9, 4.5},
+        unclassified    = {1.0, 4.5},
+        residential     = {1.0, 4.5},
+        road            = {1.0, 4.5},
+        living_street   = {1.1, 4.5},
+        service         = {1.0, 4.5},
+        path            = {1.2, 4.5},
+        track           = {1.1, 4.5},
+        steps           = {1.1, 4.5},
+        pedestrian      = {1.2, 4.5},
+        pier            = {1.0, 4.5},
+      },
+
+      railway = {
+        platform        = {1.0, 4.5},
+      },
+
+      amenity = {
+        parking         = {1.0, 4.5},
+        parking_entrance= {1.0, 4.5}
+      },
+
+      man_made = {
+        pier            = {1.0, 4.5}
+      },
+
+      leisure = {
+        track           = {1.0, 4.5}
+      }
+    },
+
+    route_weights = {
+      ferry = {0.3, nil}
+    },
+
+    bridge_speeds = {
+    },
+
+    surface_speeds= {
+      ["fine_gravel"] = {0.8, 4.5},
+      ["gravel"]      = {0.7, 3.5},
+      ["pebblestone"] = {0.7, 3.5},
+      ["mud"]         = {0.5, 3.5},
+      ["ground"]      = {0.8, 4.5},
+      ["unpaved"]     = {0.8, 4.5},
+      ["grass"]       = {0.5, 3.5},
+      ["dirt"]        = {0.5, 3.5},
+      ["compacted"]   = {0.9, 4.5},
+      ["grit"]        = {0.8, 4.5},
+      ["sand"]        = {0.6, 4.5}
+    },
+
+    tracktype_speeds = {
+      grade1 =  {1.1, 4.5},
+      grade2 =  {1.1, 4.5},
+      grade3 =  {1.0, 3.5},
+      grade4 =  {0.9, 3.5},
+      grade5 =  {0.9, 3.5}
+    },
+
+    smoothness_speeds = {
+    },
+
+    speed_path = {
+      sac_scale = { hiking = 0.5,
+                    mountain_hiking = 0,
+                    demanding_mountain_hiking = 0,
+                    alpine_hiking = 0,
+                    demanding_alpine_hiking = 0
+                  },
+      bicycle = { designated = 0.5, yes = 0.9 }
     }
-  },
+  }
 
-  route_speeds = {
-    ferry = 3
-  },
-
-  bridge_speeds = {
-  },
-
-  surface_speeds = { 
-    ["fine_gravel"] = walking_speed*0.8,
-    ["gravel"] = walking_speed*0.7,
-    ["pebblestone"] = walking_speed*0.7,
-    ["mud"] = walking_speed*0.5,
-    ["ground"] = walking_speed*0.8,
-    ["unpaved"] = walking_speed*0.8,
-    ["grass"] = walking_speed*0.5,
-    ["dirt"] = walking_speed*0.5,
-    ["compacted"] = walking_speed*0.9,
-    ["grit"] = walking_speed*0.8,
-    ["sand"] = walking_speed*0.6
-  },
-
-  tracktype_speeds = {
-    grade1 =  11,
-    grade2 =  11,
-    grade3 =  10,
-    grade4 =   9,
-    grade5 =   9
-  },
-
-  smoothness_speeds = {
-  },
-
-  speed_path = {
-    sac_scale = { hiking = 0.5,
-                  mountain_hiking = 0,
-                  demanding_mountain_hiking = 0,
-                  alpine_hiking = 0,
-                  demanding_alpine_hiking = 0
-                },
-    bicycle = { designated = 0.5, yes = 0.9 }
-}
+end
 
 
-}
-
-
-function node_function (node, result)
+function process_node (profile, node, result)
   -- parse access and barrier tags
   local access = find_access_tag(node, profile.access_tags_hierarchy)
   if access then
@@ -213,7 +215,7 @@ function node_function (node, result)
 end
 
 -- main entry point for processsing a way
-function way_function(way, result)
+function process_way(profile, way, result)
   -- the intial filtering of ways based on presence of tags
   -- affects processing times significantly, because all ways
   -- have to be checked.
@@ -287,9 +289,6 @@ function way_function(way, result)
 
     -- set name, ref and pronunciation
     WayHandlers.names,
-
-    -- set weight properties of the way
-    WayHandlers.weights
   }
 
   WayHandlers.run(profile, way, result, data, handlers)
@@ -302,19 +301,30 @@ function way_function(way, result)
   end
 end
 
-function turn_function (turn)
+function process_turn(profile, turn)
   turn.duration = 0.
 
-  if turn.direction_modifier == direction_modifier.u_turn then
-     turn.duration = turn.duration + profile.u_turn_penalty
+  if turn.is_u_turn then
+    turn.duration = turn.duration + profile.properties.u_turn_penalty
   end
 
   if turn.has_traffic_light then
-     turn.duration = profile.traffic_light_penalty
+     turn.duration = turn.duration + profile.properties.traffic_light_penalty
   end
-  
+
+  if profile.properties.weight_name == 'cyclability' then
+    turn.weight = turn.duration
+  end
+
   -- penalize turns from non-local access only segments onto local access only tags
   if not turn.source_restricted and turn.target_restricted then
       turn.weight = turn.weight + 3000
   end
 end
+
+return {
+  setup = setup,
+  process_way = process_way,
+  process_node = process_node,
+  process_turn = process_turn
+}
