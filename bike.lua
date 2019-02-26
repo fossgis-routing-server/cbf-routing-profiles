@@ -341,8 +341,8 @@ function speed_handler(profile,way,result,data)
     if data.duration and durationIsValid(data.duration) then
       result.duration = math.max( parseDuration(data.duration), 1 )
     end
-    result.forward_rate = bridge_speed[2]
-    result.backward_rate = bridge_speed[2]
+    result.forward_rate = bridge_speed[1]
+    result.backward_rate = bridge_speed[1]
     result.forward_speed = bridge_speed[2]
     result.backward_speed = bridge_speed[2]
     data.way_type_allows_pushing = true
