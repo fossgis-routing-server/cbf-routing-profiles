@@ -292,6 +292,14 @@ function process_way(profile, way, result)
   }
 
   WayHandlers.run(profile, way, result, data, handlers)
+
+  if result.forward_rate > 0 then
+    result.forward_rate = result.forward_rate * 10
+  end
+
+  if result.backward_rate > 0 then
+    result.backward_rate = result.backward_rate * 10
+  end
   
   if result.forward_rate == -1 and result.forward_speed > 0 then
     result.forward_rate = result.forward_speed / 3.6;
