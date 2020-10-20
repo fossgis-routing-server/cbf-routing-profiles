@@ -147,7 +147,8 @@ function setup()
         unclassified    = 25,
         residential     = 25,
         living_street   = 10,
-        service         = 15
+        service         = 15,
+        track           = 10
       }
     },
 
@@ -235,11 +236,11 @@ function setup()
 
     -- max speed for tracktypes
     tracktype_speeds = {
-      grade1 =  60,
-      grade2 =  40,
-      grade3 =  30,
-      grade4 =  25,
-      grade5 =  20
+      grade1 =  15,
+      grade2 =  5,
+      grade3 =  0,
+      grade4 =  0,
+      grade5 =  0
     },
 
     -- max speed for smoothnesses
