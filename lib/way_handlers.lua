@@ -450,12 +450,9 @@ function WayHandlers.parse_maxspeed(source,profile)
   if not source then
     return 0
   end
-  local n = tonumber(source:match("%d*"))
-  if n then
-    if string.match(source, "mph") or string.match(source, "mp/h") then
-      n = (n*1609)/1000
-    end
-  else
+
+  local n = Measure.get_max_speed(source)
+  if not n then
     -- parse maxspeed like FR:urban
     source = string.lower(source)
     n = profile.maxspeed_table[source]
@@ -508,6 +505,38 @@ function WayHandlers.handle_width(profile,way,result,data)
     if backward and backward <= profile.vehicle_width then
       result.backward_mode = mode.inaccessible
     end
+  end
+end
+
+-- handle maxweight tags
+function WayHandlers.handle_weight(profile,way,result,data)
+  local keys = Sequence { 'maxweight' }
+  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
+  forward = Measure.get_max_weight(forward)
+  backward = Measure.get_max_weight(backward)
+
+  if forward and forward < profile.vehicle_weight then
+    result.forward_mode = mode.inaccessible
+  end
+
+  if backward and backward < profile.vehicle_weight then
+    result.backward_mode = mode.inaccessible
+  end
+end
+
+-- handle maxlength tags
+function WayHandlers.handle_length(profile,way,result,data)
+  local keys = Sequence { 'maxlength' }
+  local forward, backward = Tags.get_forward_backward_by_set(way,data,keys)
+  forward = Measure.get_max_length(forward)
+  backward = Measure.get_max_length(backward)
+
+  if forward and forward < profile.vehicle_length then
+    result.forward_mode = mode.inaccessible
+  end
+
+  if backward and backward < profile.vehicle_length then
+    result.backward_mode = mode.inaccessible
   end
 end
 
