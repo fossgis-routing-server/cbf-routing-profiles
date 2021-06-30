@@ -49,8 +49,13 @@ function setup()
       'sally_port',
       'gate',
       'lift_gate',
+      'swing_gate',
+      'sliding_gate',
+      'hampshire_gate',
       'no',
-      'block'
+      'block',
+      'kerb',
+      'height_restrictor'
     },
 
     access_tag_whitelist = Set {
