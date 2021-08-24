@@ -116,7 +116,8 @@ function setup()
     },
 
     classes = Sequence {
-        'toll', 'motorway', 'ferry', 'restricted', 'tunnel'
+	    -- no memory for classes on demo server
+        -- 'toll', 'motorway', 'ferry', 'restricted', 'tunnel'
     },
 
     -- classes to support for exclude flags
