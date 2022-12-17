@@ -666,7 +666,7 @@ end
 -- speed on paths
 function WayHandlers.adjust_speed_for_path(profile, way, result, data)
     if way:get_value_by_key("highway") == 'path' then
-        for k,v in ipairs(profile.speed_path) do
+        for k,v in pairs(profile.speed_path) do
             local tag = way:get_value_by_key(k)
             if tag ~= '' then
                 if v == nil then
