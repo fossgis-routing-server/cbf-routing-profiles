@@ -215,7 +215,7 @@ function setup()
 
 
     speed_path = {
-      sac_scale = nil,
+      sac_scale = 0,
       foot = { designated = {0.2, 8},
                yes = {0.35, 8} },
       bicycle = { yes = {1.2, 16} },
