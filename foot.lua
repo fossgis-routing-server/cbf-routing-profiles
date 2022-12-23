@@ -178,7 +178,8 @@ function setup()
                     mountain_hiking = {0,0},
                     demanding_mountain_hiking = {0,0},
                     alpine_hiking = {0,0},
-                    demanding_alpine_hiking = {0,0}
+                    demanding_alpine_hiking = {0,0},
+                    difficult_alpine_hiking = {0,0}
                   },
       bicycle = { designated = {0.5, 4.5}, yes = {0.9, 4.5} }
     }
