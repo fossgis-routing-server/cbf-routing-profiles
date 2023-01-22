@@ -668,7 +668,7 @@ function WayHandlers.adjust_speed_for_path(profile, way, result, data)
     if way:get_value_by_key("highway") == 'path' then
         for k,v in pairs(profile.speed_path) do
             local tag = way:get_value_by_key(k)
-            if tag ~= '' then
+            if tag then
                 if v == 0 then
                     result.forward_speed = 0
                     result.forward_rate = 0
