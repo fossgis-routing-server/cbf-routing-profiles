@@ -210,7 +210,8 @@ function setup()
 
     avoid = Set {
       'impassable',
-      'construction'
+      'construction',
+      'proposed'
     },
 
 
