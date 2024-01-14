@@ -348,7 +348,7 @@ function process_node(profile, node, result, relations)
       -- and incorrect tagging of highway crossing kerb as highway barrier
       local kerb = node:get_value_by_key("kerb")
       local highway = node:get_value_by_key("highway")
-      local flat_kerb = kerb and ("lowered" == kerb or "flush" == kerb)
+      local flat_kerb = kerb and ("lowered" == kerb or "flush" == kerb or "rolled" == kerb)
       local highway_crossing_kerb = barrier == "kerb" and highway and highway == "crossing"
 
       if not profile.barrier_whitelist[barrier]
