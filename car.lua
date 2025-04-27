@@ -462,6 +462,14 @@ function process_way(profile, way, result, relations)
 
   WayHandlers.run(profile, way, result, data, handlers, relations)
 
+  if (result.forward_speed <= 0 and result.forward_rate <= 0) then
+      result.forward_mode = mode.inaccessible;
+  end
+
+  if (result.backward_speed <= 0 and result.backward_rate <= 0) then
+      result.backward_mode = mode.inaccessible;
+  end
+
   if profile.cardinal_directions then
       Relations.process_way_refs(way, relations, result)
   end
