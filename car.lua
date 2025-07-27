@@ -6,6 +6,7 @@ Set = require('lib/set')
 Sequence = require('lib/sequence')
 Handlers = require("lib/way_handlers")
 Relations = require("lib/relations")
+Obstacles = require("lib/obstacles")
 find_access_tag = require("lib/access").find_access_tag
 limit = require("lib/maxspeed").limit
 Utils = require("lib/utils")
@@ -275,8 +276,10 @@ function setup()
       ["be-bru:rural"] = 70,
       ["be-bru:urban"] = 30,
       ["be-vlg:rural"] = 70,
+      ["bg:motorway"] = 140,
       ["by:urban"] = 60,
       ["by:motorway"] = 110,
+      ["ca-on:rural"] = 80,
       ["ch:rural"] = 80,
       ["ch:trunk"] = 100,
       ["ch:motorway"] = 120,
@@ -286,6 +289,7 @@ function setup()
       ["de:rural"] = 100,
       ["de:motorway"] = 0,
       ["dk:rural"] = 80,
+      ["es:trunk"] = 90,
       ["fr:rural"] = 80,
       ["gb:nsl_single"] = (60*1609)/1000,
       ["gb:nsl_dual"] = (70*1609)/1000,
@@ -294,8 +298,11 @@ function setup()
       ["nl:trunk"] = 100,
       ['no:rural'] = 80,
       ['no:motorway'] = 110,
+      ['ph:urban'] = 40,
+      ['ph:rural'] = 80,
+      ['ph:motorway'] = 100,
       ['pl:rural'] = 100,
-      ['pl:trunk'] = 120,
+      ['pl:expressway'] = 120,
       ['pl:motorway'] = 140,
       ["ro:trunk"] = 100,
       ["ru:living_street"] = 20,
@@ -328,7 +335,7 @@ function process_node(profile, node, result, relations)
   local access = find_access_tag(node, profile.access_tags_hierarchy)
   if access then
     if profile.access_tag_blacklist[access] and not profile.restricted_access_tag_list[access] then
-      result.barrier = true
+      obstacle_map:add(node, Obstacle.new(obstacle_type.barrier))
     end
   else
     local barrier = node:get_value_by_key("barrier")
@@ -348,7 +355,7 @@ function process_node(profile, node, result, relations)
       -- and incorrect tagging of highway crossing kerb as highway barrier
       local kerb = node:get_value_by_key("kerb")
       local highway = node:get_value_by_key("highway")
-      local flat_kerb = kerb and ("lowered" == kerb or "flush" == kerb or "rolled" == kerb)
+      local flat_kerb = kerb and ("lowered" == kerb or "flush" == kerb)
       local highway_crossing_kerb = barrier == "kerb" and highway and highway == "crossing"
 
       if not profile.barrier_whitelist[barrier]
@@ -356,10 +363,12 @@ function process_node(profile, node, result, relations)
                 and not flat_kerb
                 and not highway_crossing_kerb
                 or restricted_by_height then
-        result.barrier = true
+        obstacle_map:add(node, Obstacle.new(obstacle_type.barrier))
       end
     end
   end
+
+  Obstacles.process_node(profile, node)
 
   -- check if node is a traffic light
   local tag = node:get_value_by_key("highway")
@@ -481,6 +490,25 @@ function process_turn(profile, turn)
   -- the function to some turn penalty samples from real driving.
   local turn_penalty = profile.turn_penalty
   local turn_bias = turn.is_left_hand_driving and 1. / profile.turn_bias or profile.turn_bias
+
+  for _, obs in pairs(obstacle_map:get(turn.from, turn.via)) do
+    -- disregard a minor stop if entering by the major road
+    -- rationale: if a stop sign is tagged at the center of the intersection with stop=minor
+    -- it should only penalize the minor roads entering the intersection
+    if obs.type == obstacle_type.stop_minor and not Obstacles.entering_by_minor_road(turn) then
+        goto skip
+    end
+    -- heuristic to infer the direction of a stop without an explicit direction tag
+    -- rationale: a stop sign should not be placed farther than 20m from the intersection
+    if turn.number_of_roads == 2
+        and obs.type == obstacle_type.stop
+        and obs.direction == obstacle_direction.none
+        and turn.source_road.distance < 20
+        and turn.target_road.distance > 20 then
+            goto skip
+    end
+    turn.duration = turn.duration + obs.duration
+    ::skip::
 
   if turn.has_traffic_light then
       turn.duration = profile.properties.traffic_light_penalty
